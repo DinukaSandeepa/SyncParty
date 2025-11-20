@@ -16,6 +16,7 @@ export default function Home() {
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [fontSize, setFontSize] = useState(16);
   const [statusLog, setStatusLog] = useState([]);
+  const [showControls, setShowControls] = useState(true);
   
   // Refs
   const videoRef = useRef(null);
@@ -291,6 +292,15 @@ export default function Home() {
     }
   };
 
+  // Handle right-click on video to toggle controls
+  const handleContextMenu = (e) => {
+    // Check if video is in fullscreen
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      e.preventDefault();
+      setShowControls(prev => !prev);
+    }
+  };
+
   // Update track visibility
   useEffect(() => {
     if (trackRef.current) {
@@ -339,7 +349,7 @@ export default function Home() {
               <label className="block text-sm font-medium mb-2">Video File</label>
               <input
                 type="file"
-                accept="video/*"
+                accept="video/*,.mkv,.mp4,.webm,.avi,.mov,.wmv,.flv,.m4v"
                 onChange={handleVideoFileChange}
                 className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer"
               />
@@ -364,11 +374,12 @@ export default function Home() {
               <video
                 ref={videoRef}
                 src={videoFile}
-                controls
+                controls={showControls}
                 onPlay={handlePlay}
                 onPause={handlePause}
                 onSeeked={handleSeeked}
                 onTimeUpdate={handleTimeUpdate}
+                onContextMenu={handleContextMenu}
                 className="w-full"
                 style={{ '--subtitle-font-size': `${fontSize}px` }}
               >
@@ -431,7 +442,7 @@ export default function Home() {
                 <input
                   type="range"
                   min="12"
-                  max="32"
+                  max="64"
                   step="2"
                   value={fontSize}
                   onChange={handleFontSizeChange}
