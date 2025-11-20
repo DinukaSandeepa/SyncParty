@@ -309,18 +309,18 @@ export default function Home() {
   }, [showSubtitles]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white p-8">
+    <main className="min-h-screen bg-black text-white p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+          <h1 className="text-5xl font-bold mb-2 text-white">
             SyncParty
           </h1>
-          <p className="text-gray-300">Watch videos together in perfect sync</p>
+          <p className="text-gray-400">Watch videos together in perfect sync</p>
         </div>
 
         {/* Room Controls */}
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 mb-6 border border-white/20">
+        <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/20">
           <h2 className="text-xl font-semibold mb-4">Room</h2>
           <div className="flex gap-3">
             <input
@@ -329,12 +329,12 @@ export default function Home() {
               onChange={(e) => setRoom(e.target.value)}
               placeholder="Enter room name"
               disabled={isInRoom}
-              className="flex-1 px-4 py-2 bg-white/10 border border-white/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-white/10 border border-white/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-50"
             />
             <button
               onClick={handleJoinRoom}
               disabled={isInRoom || !room.trim()}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+              className="px-6 py-2 bg-white text-black hover:bg-gray-200 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
             >
               {isInRoom ? 'In Room' : 'Join Room'}
             </button>
@@ -342,7 +342,7 @@ export default function Home() {
         </div>
 
         {/* File Inputs */}
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 mb-6 border border-white/20">
+        <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/20">
           <h2 className="text-xl font-semibold mb-4">Media Files</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -351,7 +351,7 @@ export default function Home() {
                 type="file"
                 accept="video/*,.mkv,.mp4,.webm,.avi,.mov,.wmv,.flv,.m4v"
                 onChange={handleVideoFileChange}
-                className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer"
+                className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-black hover:file:bg-gray-200 file:cursor-pointer"
               />
             </div>
             <div>
@@ -360,7 +360,7 @@ export default function Home() {
                 type="file"
                 accept=".srt,.vtt"
                 onChange={handleSubtitleFileChange}
-                className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white hover:file:bg-purple-700 file:cursor-pointer"
+                className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-800 file:text-white hover:file:bg-gray-700 file:cursor-pointer"
               />
             </div>
           </div>
@@ -368,7 +368,7 @@ export default function Home() {
 
         {/* Video Player */}
         {videoFile && (
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 mb-6 border border-white/20">
+          <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/20">
             <h2 className="text-xl font-semibold mb-4">Video Player</h2>
             <div className="relative bg-black rounded-lg overflow-hidden">
               <video
@@ -400,7 +400,7 @@ export default function Home() {
 
         {/* Subtitle Controls */}
         {subtitleFile && (
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 mb-6 border border-white/20">
+          <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/20">
             <h2 className="text-xl font-semibold mb-4">Subtitle Controls</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Toggle */}
@@ -410,8 +410,8 @@ export default function Home() {
                   onClick={handleSubtitleToggle}
                   className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
                     showSubtitles 
-                      ? 'bg-green-600 hover:bg-green-700' 
-                      : 'bg-gray-600 hover:bg-gray-700'
+                      ? 'bg-white text-black hover:bg-gray-200' 
+                      : 'bg-gray-700 hover:bg-gray-600'
                   }`}
                 >
                   {showSubtitles ? 'Subtitles ON' : 'Subtitles OFF'}
@@ -430,7 +430,7 @@ export default function Home() {
                   step="0.1"
                   value={subtitleOffset}
                   onChange={handleSubtitleOffsetChange}
-                  className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-white"
                 />
               </div>
 
@@ -446,7 +446,7 @@ export default function Home() {
                   step="2"
                   value={fontSize}
                   onChange={handleFontSizeChange}
-                  className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                  className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-gray-400"
                 />
               </div>
             </div>
@@ -454,14 +454,14 @@ export default function Home() {
         )}
 
         {/* Status Log */}
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+        <div className="bg-white/5 rounded-xl p-6 border border-white/20">
           <h2 className="text-xl font-semibold mb-4">Activity Log</h2>
-          <div className="bg-black/30 rounded-lg p-4 h-48 overflow-y-auto font-mono text-sm">
+          <div className="bg-black/50 rounded-lg p-4 h-48 overflow-y-auto font-mono text-sm">
             {statusLog.length === 0 ? (
               <p className="text-gray-400">No activity yet...</p>
             ) : (
               statusLog.map((log, index) => (
-                <div key={index} className="text-green-400 mb-1">
+                <div key={index} className="text-gray-300 mb-1">
                   {log}
                 </div>
               ))
