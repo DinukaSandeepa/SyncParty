@@ -9,18 +9,19 @@ A synchronized media player that allows multiple users to watch local video file
 - Automatic state synchronization for new joiners
 
 🎬 **Media Support**
-- Local video file playback (all browser-supported formats)
+- Local video file playback (supports .mp4, .mkv, .webm, .avi, .mov, .wmv, .flv, .m4v)
 - Subtitle support (.srt and .vtt formats)
 - Automatic SRT to WebVTT conversion
 
 🎛️ **Subtitle Controls**
 - Toggle subtitle visibility
 - Adjust subtitle timing offset (-10s to +10s)
-- Customize font size (12px to 32px)
+- Customize font size (12px to 64px)
 - All subtitle settings sync across users
 
 🎨 **Modern UI**
-- Beautiful gradient design with glassmorphism effects
+- Sleek Monochrome / Black & White design
+- Minimalist aesthetic with glassmorphism effects
 - Real-time activity log
 - Responsive layout
 - Dark mode optimized
@@ -28,14 +29,14 @@ A synchronized media player that allows multiple users to watch local video file
 ## Tech Stack
 
 **Frontend:**
-- Next.js 14
-- React 18
+- Next.js 16
+- React 19
 - Socket.IO Client
 - Tailwind CSS
 
 **Backend:**
 - Node.js
-- Express
+- Express 5
 - Socket.IO
 - CORS
 
