@@ -9,6 +9,7 @@ const server = http.createServer(app);
 const allowedOrigins = [
   'http://localhost:3000',
   'https://sync-party.vercel.app',
+  'https://sync.dinukasandeepa.com',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
