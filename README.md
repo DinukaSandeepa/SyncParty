@@ -137,13 +137,17 @@ FRONTEND_URL=http://localhost:3000
 
 ## Deployment
 
+**⚠️ IMPORTANT: For detailed deployment instructions and troubleshooting, see [DEPLOYMENT.md](./DEPLOYMENT.md)**
+
+### Quick Deployment Guide
+
 ### Frontend (Vercel)
 
 1. Push your code to GitHub
 2. Import the project in Vercel
 3. Set the root directory to `frontend`
 4. Add environment variable:
-   - `NEXT_PUBLIC_SOCKET_URL`: Your deployed backend URL
+   - `NEXT_PUBLIC_SOCKET_URL`: Your deployed backend URL (e.g., `https://syncparty.onrender.com`)
 5. Deploy!
 
 ### Backend (Render/Railway)
@@ -155,7 +159,7 @@ FRONTEND_URL=http://localhost:3000
 4. Build command: `npm install`
 5. Start command: `npm start`
 6. Add environment variable:
-   - `FRONTEND_URL`: Your deployed frontend URL
+   - `FRONTEND_URL`: Your deployed frontend URL (e.g., `https://sync-party.vercel.app`)
 7. Deploy!
 
 **Railway:**
@@ -165,6 +169,14 @@ FRONTEND_URL=http://localhost:3000
 4. Add environment variable:
    - `FRONTEND_URL`: Your deployed frontend URL
 5. Deploy!
+
+### Troubleshooting Deployment
+
+If rooms aren't syncing between devices after deployment, check [DEPLOYMENT.md](./DEPLOYMENT.md) for:
+- CORS configuration issues
+- Environment variable setup
+- Connection debugging steps
+- Common deployment problems and solutions
 
 ## Project Structure
 
