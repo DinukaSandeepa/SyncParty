@@ -52,7 +52,7 @@ export default function Home() {
       if (videoRef.current) {
         videoRef.current.currentTime = currentTime;
         videoRef.current.play().catch(err => {
-          console.error('Play error:', err);
+
           addStatus('Error: Could not play video');
         });
       }

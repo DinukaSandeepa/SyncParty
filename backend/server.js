@@ -46,12 +46,12 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-  console.log(`User connected: ${socket.id}`);
+
   socket.on('join-room', (roomId) => {
     socket.join(roomId);
     const roomSockets = io.sockets.adapter.rooms.get(roomId);
     const roomSize = roomSockets ? roomSockets.size : 0;
-    console.log(`User ${socket.id} joined room: ${roomId} (${roomSize} users in room)`);
+
     if (!rooms.has(roomId)) {
       rooms.set(roomId, {
         isPlaying: false,
@@ -60,13 +60,13 @@ io.on('connection', (socket) => {
         subtitleOffset: 0,
         fontSize: 16
       });
-      console.log(`Created new room state for: ${roomId}`);
+
     }
     socket.emit('room-state', rooms.get(roomId));
     socket.to(roomId).emit('user-joined', { userId: socket.id });
   });
   socket.on('play-video', ({ roomId, currentTime }) => {
-    console.log(`Play video in room ${roomId} at ${currentTime}s`);
+
     if (rooms.has(roomId)) {
       const roomState = rooms.get(roomId);
       roomState.isPlaying = true;
@@ -75,7 +75,7 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('play-video', { currentTime });
   });
   socket.on('pause-video', ({ roomId, currentTime }) => {
-    console.log(`Pause video in room ${roomId} at ${currentTime}s`);
+
     if (rooms.has(roomId)) {
       const roomState = rooms.get(roomId);
       roomState.isPlaying = false;
@@ -84,7 +84,7 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('pause-video', { currentTime });
   });
   socket.on('seek-video', ({ roomId, currentTime }) => {
-    console.log(`Seek video in room ${roomId} to ${currentTime}s`);
+
     if (rooms.has(roomId)) {
       const roomState = rooms.get(roomId);
       roomState.currentTime = currentTime;
@@ -92,7 +92,7 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('seek-video', { currentTime });
   });
   socket.on('subtitle-loaded', ({ roomId, fileName, fileSize }) => {
-    console.log(`Subtitle loaded in room ${roomId}: ${fileName} (${fileSize} bytes)`);
+
     socket.to(roomId).emit('subtitle-loaded', {
       userId: socket.id,
       fileName,
@@ -100,7 +100,7 @@ io.on('connection', (socket) => {
     });
   });
   socket.on('subtitle-toggle', ({ roomId, visible }) => {
-    console.log(`Subtitle toggle in room ${roomId}: ${visible}`);
+
     if (rooms.has(roomId)) {
       const roomState = rooms.get(roomId);
       roomState.subtitleVisible = visible;
@@ -108,7 +108,7 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('subtitle-toggle', { visible });
   });
   socket.on('subtitle-offset', ({ roomId, offset }) => {
-    console.log(`Subtitle offset in room ${roomId}: ${offset}s`);
+
     if (rooms.has(roomId)) {
       const roomState = rooms.get(roomId);
       roomState.subtitleOffset = offset;
@@ -116,7 +116,7 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('subtitle-offset', { offset });
   });
   socket.on('font-size-change', ({ roomId, fontSize }) => {
-    console.log(`Font size change in room ${roomId}: ${fontSize}px`);
+
     if (rooms.has(roomId)) {
       const roomState = rooms.get(roomId);
       roomState.fontSize = fontSize;
@@ -124,7 +124,7 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('font-size-change', { fontSize });
   });
   socket.on('disconnect', () => {
-    console.log(`User disconnected: ${socket.id}`);
+
   });
 });
 
