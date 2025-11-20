@@ -320,7 +320,7 @@ export default function Home() {
         </div>
 
         {/* Room Controls */}
-        <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/20">
+        <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/5">
           <h2 className="text-xl font-semibold mb-4">Room</h2>
           <div className="flex gap-3">
             <input
@@ -334,7 +334,7 @@ export default function Home() {
             <button
               onClick={handleJoinRoom}
               disabled={isInRoom || !room.trim()}
-              className="px-6 py-2 bg-white text-black hover:bg-gray-200 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+              className="px-6 py-2 bg-white text-black hover:bg-white/80 disabled:bg-white/20 disabled:text-white/40 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
             >
               {isInRoom ? 'In Room' : 'Join Room'}
             </button>
@@ -342,7 +342,7 @@ export default function Home() {
         </div>
 
         {/* File Inputs */}
-        <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/20">
+        <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/5">
           <h2 className="text-xl font-semibold mb-4">Media Files</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -351,7 +351,7 @@ export default function Home() {
                 type="file"
                 accept="video/*,.mkv,.mp4,.webm,.avi,.mov,.wmv,.flv,.m4v"
                 onChange={handleVideoFileChange}
-                className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-black hover:file:bg-gray-200 file:cursor-pointer"
+                className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-black hover:file:bg-white/80 file:cursor-pointer"
               />
             </div>
             <div>
@@ -360,7 +360,7 @@ export default function Home() {
                 type="file"
                 accept=".srt,.vtt"
                 onChange={handleSubtitleFileChange}
-                className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-800 file:text-white hover:file:bg-gray-700 file:cursor-pointer"
+                className="w-full px-4 py-2 bg-white/10 border border-white/30 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-black file:text-white hover:file:bg-black/80 file:cursor-pointer file:border file:border-white/30"
               />
             </div>
           </div>
@@ -368,7 +368,7 @@ export default function Home() {
 
         {/* Video Player */}
         {videoFile && (
-          <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/20">
+          <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/5">
             <h2 className="text-xl font-semibold mb-4">Video Player</h2>
             <div className="relative bg-black rounded-lg overflow-hidden">
               <video
@@ -400,7 +400,7 @@ export default function Home() {
 
         {/* Subtitle Controls */}
         {subtitleFile && (
-          <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/20">
+          <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/5">
             <h2 className="text-xl font-semibold mb-4">Subtitle Controls</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Toggle */}
@@ -408,10 +408,10 @@ export default function Home() {
                 <label className="block text-sm font-medium mb-2">Visibility</label>
                 <button
                   onClick={handleSubtitleToggle}
-                  className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+                  className={`w-full px-4 py-2 rounded-lg font-medium transition-colors border ${
                     showSubtitles 
-                      ? 'bg-white text-black hover:bg-gray-200' 
-                      : 'bg-gray-700 hover:bg-gray-600'
+                      ? 'bg-white text-black hover:bg-white/80 border-white' 
+                      : 'bg-black text-white hover:bg-white/10 border-white/30'
                   }`}
                 >
                   {showSubtitles ? 'Subtitles ON' : 'Subtitles OFF'}
@@ -454,7 +454,7 @@ export default function Home() {
         )}
 
         {/* Status Log */}
-        <div className="bg-white/5 rounded-xl p-6 border border-white/20">
+        <div className="bg-white/5 rounded-xl p-6 border border-white/5">
           <h2 className="text-xl font-semibold mb-4">Activity Log</h2>
           <div className="bg-black/50 rounded-lg p-4 h-48 overflow-y-auto font-mono text-sm">
             {statusLog.length === 0 ? (
