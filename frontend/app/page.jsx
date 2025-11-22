@@ -25,6 +25,7 @@ export default function Home() {
   const playerRef = useRef(null);
   const trackRef = useRef(null);
   const isReceivingUpdate = useRef(false);
+  const seekDebounceTimer = useRef(null);
   const addStatus = (message) => {
     const timestamp = new Date().toLocaleTimeString();
     setStatusLog(prev => [...prev.slice(-9), `[${timestamp}] ${message}`]);
@@ -97,7 +98,8 @@ export default function Home() {
       if (playerRef.current) {
         playerRef.current.currentTime = currentTime;
       }
-      setTimeout(() => { isReceivingUpdate.current = false; }, 100);
+      // Longer timeout for YouTube to ensure seek completes
+      setTimeout(() => { isReceivingUpdate.current = false; }, 500);
     });
     socket.on('subtitle-loaded', ({ userId, fileName, fileSize }) => {
       addStatus(`User ${userId.substring(0, 8)} loaded subtitle: ${fileName}`);
@@ -150,7 +152,16 @@ export default function Home() {
         };
 
         if (mode === 'youtube') {
-          plyrOptions.youtube = { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 };
+          plyrOptions.youtube = {
+            noCookie: false,
+            rel: 0,
+            showinfo: 0,
+            iv_load_policy: 3,
+            modestbranding: 1
+          };
+          // Set muted to false for YouTube to enable audio
+          plyrOptions.muted = false;
+          plyrOptions.volume = 1;
         } else {
           plyrOptions.captions = { active: true, update: true, language: 'en' };
         }
@@ -179,10 +190,33 @@ export default function Home() {
           handleTimeUpdate();
         });
 
-        // YouTube-specific event
+        // YouTube-specific events and fixes
         if (mode === 'youtube') {
           playerRef.current.on('ready', () => {
             addStatus('YouTube player ready');
+
+            // Fix: Ensure audio is enabled by unmuting and setting volume
+            setTimeout(() => {
+              if (playerRef.current) {
+                playerRef.current.muted = false;
+                playerRef.current.volume = 1;
+                addStatus('Audio enabled');
+              }
+            }, 500);
+          });
+
+          // Additional YouTube-specific event for better seeking support
+          playerRef.current.on('seeking', () => {
+            // This fires when seeking starts (good for YouTube)
+            if (!isReceivingUpdate.current) {
+              // We'll let 'seeked' handle the actual sync to avoid double events
+            }
+          });
+
+          // Handle YouTube API state changes
+          playerRef.current.on('statechange', (event) => {
+            // YouTube specific state changes
+            // This helps with catching state changes that might not fire standard events
           });
         }
       })();
@@ -190,6 +224,10 @@ export default function Home() {
 
     return () => {
       isMounted = false;
+      // Clean up debounce timer
+      if (seekDebounceTimer.current) {
+        clearTimeout(seekDebounceTimer.current);
+      }
       if (playerRef.current) {
         playerRef.current.destroy();
         playerRef.current = null;
@@ -367,11 +405,20 @@ export default function Home() {
   };
   const handleSeeked = () => {
     if (isReceivingUpdate.current) return;
-    const time = playerRef.current?.currentTime || 0;
-    if (socket && isInRoom) {
-      socket.emit('seek-video', { roomId: room, currentTime: time });
-      addStatus(`Sent seek to ${time.toFixed(2)}s`);
+
+    // Clear any pending seek events
+    if (seekDebounceTimer.current) {
+      clearTimeout(seekDebounceTimer.current);
     }
+
+    // Debounce seek events to prevent spam (especially important for YouTube)
+    seekDebounceTimer.current = setTimeout(() => {
+      const time = playerRef.current?.currentTime || 0;
+      if (socket && isInRoom) {
+        socket.emit('seek-video', { roomId: room, currentTime: time });
+        addStatus(`Sent seek to ${time.toFixed(2)}s`);
+      }
+    }, 300); // 300ms debounce - balances responsiveness and sync accuracy
   };
   const handleTimeUpdate = () => {
     if (playerRef.current) {
@@ -463,8 +510,8 @@ export default function Home() {
               }}
               disabled={isInRoom}
               className={`flex-1 px-6 py-3 font-medium rounded-lg transition-all duration-300 border ${mode === 'local'
-                  ? 'bg-white text-black border-white hover:bg-white/80'
-                  : 'bg-white/10 text-white border-white/30 hover:bg-white/15'
+                ? 'bg-white text-black border-white hover:bg-white/80'
+                : 'bg-white/10 text-white border-white/30 hover:bg-white/15'
                 } disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95`}
             >
               🎬 Local Video
@@ -477,8 +524,8 @@ export default function Home() {
               }}
               disabled={isInRoom}
               className={`flex-1 px-6 py-3 font-medium rounded-lg transition-all duration-300 border ${mode === 'youtube'
-                  ? 'bg-white text-black border-white hover:bg-white/80'
-                  : 'bg-white/10 text-white border-white/30 hover:bg-white/15'
+                ? 'bg-white text-black border-white hover:bg-white/80'
+                : 'bg-white/10 text-white border-white/30 hover:bg-white/15'
                 } disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95`}
             >
               📺 YouTube
