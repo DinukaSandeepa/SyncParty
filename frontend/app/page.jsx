@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useUser } from '@clerk/nextjs';
 import { io } from 'socket.io-client';
 import 'plyr/dist/plyr.css';
@@ -23,15 +24,28 @@ export default function Home() {
   const [statusLog, setStatusLog] = useState([]);
   const [showControls, setShowControls] = useState(true);
   const [isWindows, setIsWindows] = useState(false);
+  const [popup, setPopup] = useState({ show: false, message: '', icon: null });
+
   const videoRef = useRef(null);
   const playerRef = useRef(null);
   const trackRef = useRef(null);
   const isReceivingUpdate = useRef(false);
   const seekDebounceTimer = useRef(null);
+  const popupTimeoutRef = useRef(null);
+
   const addStatus = (message) => {
     const timestamp = new Date().toLocaleTimeString();
     setStatusLog(prev => [...prev.slice(-9), `[${timestamp}] ${message}`]);
   };
+
+  const triggerPopup = (message, icon) => {
+    if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
+    setPopup({ show: true, message, icon });
+    popupTimeoutRef.current = setTimeout(() => {
+      setPopup(prev => ({ ...prev, show: false }));
+    }, 2500);
+  };
+
   useEffect(() => {
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
     const newSocket = io(socketUrl);
@@ -44,6 +58,7 @@ export default function Home() {
     setSocket(newSocket);
     return () => newSocket.close();
   }, []);
+
   useEffect(() => {
     if (!socket) return;
     socket.on('room-state', (state) => {
@@ -63,6 +78,7 @@ export default function Home() {
     socket.on('user-joined', ({ userId, username }) => {
       const displayName = username || `User ${userId.substring(0, 8)}`;
       addStatus(`${displayName} joined the room`);
+      triggerPopup(`${displayName} joined`, 'user');
     });
     socket.on('youtube-url-change', ({ youtubeUrl }) => {
       addStatus(`YouTube URL updated`);
@@ -71,12 +87,14 @@ export default function Home() {
       if (videoId) {
         setYoutubeVideoId(videoId);
         setMode('youtube');
+        triggerPopup('YouTube Video Loaded', 'youtube');
       } else {
         setYoutubeVideoId(null);
       }
     });
     socket.on('play-video', ({ currentTime }) => {
       addStatus(`Remote play at ${currentTime.toFixed(2)}s`);
+      triggerPopup('Remote Play', 'play');
       isReceivingUpdate.current = true;
       if (playerRef.current) {
         playerRef.current.currentTime = currentTime;
@@ -90,6 +108,7 @@ export default function Home() {
     });
     socket.on('pause-video', ({ currentTime }) => {
       addStatus(`Remote pause at ${currentTime.toFixed(2)}s`);
+      triggerPopup('Remote Pause', 'pause');
       isReceivingUpdate.current = true;
       if (playerRef.current) {
         playerRef.current.currentTime = currentTime;
@@ -100,6 +119,7 @@ export default function Home() {
     });
     socket.on('seek-video', ({ currentTime }) => {
       addStatus(`Remote seek to ${currentTime.toFixed(2)}s`);
+      triggerPopup(`Seek to ${formatTime(currentTime)}`, 'seek');
       isReceivingUpdate.current = true;
       if (playerRef.current) {
         playerRef.current.currentTime = currentTime;
@@ -109,10 +129,12 @@ export default function Home() {
     });
     socket.on('subtitle-loaded', ({ userId, fileName, fileSize }) => {
       addStatus(`User ${userId.substring(0, 8)} loaded subtitle: ${fileName}`);
+      triggerPopup('Subtitle Loaded', 'subtitle');
     });
     socket.on('subtitle-toggle', ({ visible }) => {
       addStatus(`Remote subtitle toggle: ${visible ? 'ON' : 'OFF'}`);
       setShowSubtitles(visible);
+      triggerPopup(`Subtitles ${visible ? 'ON' : 'OFF'}`, 'subtitle');
     });
     socket.on('subtitle-offset', ({ offset }) => {
       addStatus(`Remote subtitle offset: ${offset}s`);
@@ -490,8 +512,59 @@ export default function Home() {
     }
   };
 
+  const formatTime = (seconds) => {
+    const date = new Date(seconds * 1000);
+    const hh = date.getUTCHours();
+    const mm = date.getUTCMinutes();
+    const ss = date.getUTCSeconds().toString().padStart(2, '0');
+    if (hh) {
+      return `${hh}:${mm.toString().padStart(2, '0')}:${ss}`;
+    }
+    return `${mm}:${ss}`;
+  };
+
   return (
     <main className="min-h-screen p-8 text-white bg-black">
+      {popup.show && playerRef.current?.elements?.container && createPortal(
+        <div className="absolute top-12 left-1/2 transform -translate-x-1/2 z-[100] pointer-events-none animate-fade-in-down">
+          <div className="flex items-center gap-3 px-6 py-3 border shadow-2xl bg-black/60 backdrop-blur-xl rounded-full border-white/10">
+            {popup.icon === 'play' && (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-green-400">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            )}
+            {popup.icon === 'pause' && (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-400">
+                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+              </svg>
+            )}
+            {popup.icon === 'seek' && (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            )}
+            {popup.icon === 'user' && (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            )}
+            {popup.icon === 'subtitle' && (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            )}
+            {popup.icon === 'youtube' && (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-red-500">
+                <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
+              </svg>
+            )}
+            <span className="text-sm font-medium tracking-wide text-white/90">{popup.message}</span>
+          </div>
+        </div>,
+        playerRef.current.elements.container
+      )}
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-center w-full py-10">
           <svg className='w-[200px]' xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 1524 322">
