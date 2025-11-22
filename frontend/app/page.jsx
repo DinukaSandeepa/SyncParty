@@ -68,6 +68,8 @@ export default function Home() {
       if (videoId) {
         setYoutubeVideoId(videoId);
         setMode('youtube');
+      } else {
+        setYoutubeVideoId(null);
       }
     });
     socket.on('play-video', ({ currentTime }) => {
@@ -471,6 +473,19 @@ export default function Home() {
       trackRef.current.track.mode = showSubtitles ? 'showing' : 'hidden';
     }
   }, [showSubtitles, subtitleFile]);
+
+  const handleResetMedia = () => {
+    setVideoFile(null);
+    setSubtitleFile(null);
+    setYoutubeUrl('');
+    setYoutubeVideoId(null);
+    addStatus('Media source reset');
+
+    if (socket && isInRoom && mode === 'youtube') {
+      socket.emit('youtube-url-change', { roomId: room, youtubeUrl: '' });
+    }
+  };
+
   return (
     <main className="min-h-screen p-8 text-white bg-black">
       <div className="max-w-6xl mx-auto">
@@ -501,7 +516,15 @@ export default function Home() {
           </div>
         </div>
         <div className="p-6 mb-6 transition-all duration-300 delay-200 border bg-white/5 rounded-xl border-white/5 animate-fade-in-up hover:border-white/20">
-          <h2 className="mb-4 text-xl font-semibold">Media Source</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Media Source</h2>
+            <button
+              onClick={handleResetMedia}
+              className="px-4 py-1 text-sm font-medium text-red-400 transition-all duration-300 border border-red-500/50 rounded-lg hover:bg-red-500/10 hover:border-red-500 hover:text-red-300"
+            >
+              Reset
+            </button>
+          </div>
 
           {/* Mode Selector */}
           <div className="flex gap-3 mb-6">
