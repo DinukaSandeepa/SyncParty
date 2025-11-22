@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
+import 'plyr/dist/plyr.css';
 
 export default function Home() {
   const [socket, setSocket] = useState(null);
@@ -18,6 +19,7 @@ export default function Home() {
   const [showControls, setShowControls] = useState(true);
   const [isWindows, setIsWindows] = useState(false);
   const videoRef = useRef(null);
+  const playerRef = useRef(null);
   const trackRef = useRef(null);
   const isReceivingUpdate = useRef(false);
   const addStatus = (message) => {
@@ -50,9 +52,9 @@ export default function Home() {
     socket.on('play-video', ({ currentTime }) => {
       addStatus(`Remote play at ${currentTime.toFixed(2)}s`);
       isReceivingUpdate.current = true;
-      if (videoRef.current) {
-        videoRef.current.currentTime = currentTime;
-        videoRef.current.play().catch(err => {
+      if (playerRef.current) {
+        playerRef.current.currentTime = currentTime;
+        playerRef.current.play().catch(err => {
 
           addStatus('Error: Could not play video');
         });
@@ -63,9 +65,9 @@ export default function Home() {
     socket.on('pause-video', ({ currentTime }) => {
       addStatus(`Remote pause at ${currentTime.toFixed(2)}s`);
       isReceivingUpdate.current = true;
-      if (videoRef.current) {
-        videoRef.current.currentTime = currentTime;
-        videoRef.current.pause();
+      if (playerRef.current) {
+        playerRef.current.currentTime = currentTime;
+        playerRef.current.pause();
       }
       setIsPlaying(false);
       setTimeout(() => { isReceivingUpdate.current = false; }, 100);
@@ -73,8 +75,8 @@ export default function Home() {
     socket.on('seek-video', ({ currentTime }) => {
       addStatus(`Remote seek to ${currentTime.toFixed(2)}s`);
       isReceivingUpdate.current = true;
-      if (videoRef.current) {
-        videoRef.current.currentTime = currentTime;
+      if (playerRef.current) {
+        playerRef.current.currentTime = currentTime;
       }
       setTimeout(() => { isReceivingUpdate.current = false; }, 100);
     });
@@ -113,10 +115,113 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+    if (videoFile && videoRef.current && !playerRef.current) {
+      (async () => {
+        const Plyr = (await import('plyr')).default;
+        if (!isMounted) return;
+
+        playerRef.current = new Plyr(videoRef.current, {
+          controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+          captions: { active: true, update: true, language: 'en' },
+          keyboard: { focused: true, global: true },
+        });
+
+        // Apply current settings immediately
+        if (playerRef.current.elements.container) {
+          playerRef.current.elements.container.style.setProperty('--plyr-font-size-captions', `${fontSize}px`);
+        }
+        // Don't toggle captions during init - it may not exist yet
+
+        // Add event listeners to Plyr instance
+        playerRef.current.on('play', () => {
+          if (!isReceivingUpdate.current) handlePlay();
+        });
+
+        playerRef.current.on('pause', () => {
+          if (!isReceivingUpdate.current) handlePause();
+        });
+
+        playerRef.current.on('seeked', () => {
+          if (!isReceivingUpdate.current) handleSeeked();
+        });
+
+        playerRef.current.on('timeupdate', () => {
+          handleTimeUpdate();
+        });
+      })();
+    }
+
+    return () => {
+      isMounted = false;
+      if (playerRef.current) {
+        playerRef.current.destroy();
+        playerRef.current = null;
+      }
+    };
+  }, [videoFile]);
+
+  useEffect(() => {
     if (videoRef.current) {
       videoRef.current.style.setProperty('--subtitle-font-size', `${fontSize}px`);
     }
+    if (playerRef.current && playerRef.current.elements.container) {
+      playerRef.current.elements.container.style.setProperty('--plyr-font-size-captions', `${fontSize}px`);
+
+      // Apply font size to caption wrapper if it exists
+      const captionWrapper = playerRef.current.elements.container.querySelector('.plyr__captions');
+      if (captionWrapper) {
+        captionWrapper.style.fontSize = `${fontSize}px`;
+      }
+    }
   }, [fontSize]);
+
+  // Keyboard controls
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ignore if typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (!playerRef.current) return;
+
+      switch (e.key.toLowerCase()) {
+        case ' ':
+        case 'k':
+          e.preventDefault();
+          playerRef.current.togglePlay();
+          break;
+        case 'f':
+          e.preventDefault();
+          playerRef.current.fullscreen.toggle();
+          break;
+        case 'm':
+          e.preventDefault();
+          playerRef.current.muted = !playerRef.current.muted;
+          break;
+        case 'arrowleft':
+        case 'j':
+          e.preventDefault();
+          playerRef.current.rewind(10);
+          break;
+        case 'arrowright':
+        case 'l':
+          e.preventDefault();
+          playerRef.current.forward(10);
+          break;
+        case 'arrowup':
+          e.preventDefault();
+          playerRef.current.increaseVolume(0.1);
+          break;
+        case 'arrowdown':
+          e.preventDefault();
+          playerRef.current.decreaseVolume(0.1);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   const handleJoinRoom = () => {
     if (socket && room.trim()) {
       socket.emit('join-room', room);
@@ -176,7 +281,7 @@ export default function Home() {
   };
   const handlePlay = () => {
     if (isReceivingUpdate.current) return;
-    const time = videoRef.current?.currentTime || 0;
+    const time = playerRef.current?.currentTime || 0;
     if (socket && isInRoom) {
       socket.emit('play-video', { roomId: room, currentTime: time });
       addStatus(`Sent play at ${time.toFixed(2)}s`);
@@ -185,7 +290,7 @@ export default function Home() {
   };
   const handlePause = () => {
     if (isReceivingUpdate.current) return;
-    const time = videoRef.current?.currentTime || 0;
+    const time = playerRef.current?.currentTime || 0;
     if (socket && isInRoom) {
       socket.emit('pause-video', { roomId: room, currentTime: time });
       addStatus(`Sent pause at ${time.toFixed(2)}s`);
@@ -194,15 +299,15 @@ export default function Home() {
   };
   const handleSeeked = () => {
     if (isReceivingUpdate.current) return;
-    const time = videoRef.current?.currentTime || 0;
+    const time = playerRef.current?.currentTime || 0;
     if (socket && isInRoom) {
       socket.emit('seek-video', { roomId: room, currentTime: time });
       addStatus(`Sent seek to ${time.toFixed(2)}s`);
     }
   };
   const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
+    if (playerRef.current) {
+      setCurrentTime(playerRef.current.currentTime);
     }
   };
   const handleSubtitleToggle = () => {
@@ -234,10 +339,20 @@ export default function Home() {
     }
   };
   useEffect(() => {
-    if (trackRef.current) {
+    if (playerRef.current && subtitleFile) {
+      // Only toggle if captions are available
+      try {
+        playerRef.current.toggleCaptions(showSubtitles);
+      } catch (e) {
+        // Fallback to track mode if toggleCaptions fails
+        if (trackRef.current) {
+          trackRef.current.track.mode = showSubtitles ? 'showing' : 'hidden';
+        }
+      }
+    } else if (trackRef.current) {
       trackRef.current.track.mode = showSubtitles ? 'showing' : 'hidden';
     }
-  }, [showSubtitles]);
+  }, [showSubtitles, subtitleFile]);
   return (
     <main className="min-h-screen p-8 text-white bg-black">
       <div className="max-w-6xl mx-auto">
@@ -293,17 +408,11 @@ export default function Home() {
         {videoFile && (
           <div className="p-6 mb-6 transition-all duration-300 delay-300 border bg-white/5 rounded-xl border-white/5 animate-fade-in-up hover:border-white/20">
             <h2 className="mb-4 text-xl font-semibold">Video Player</h2>
-            <div className="relative overflow-hidden transition-shadow duration-300 bg-black rounded-lg shadow-2xl hover:shadow-white/10">
+            <div className={`relative overflow-hidden transition-shadow duration-300 bg-black rounded-lg shadow-2xl hover:shadow-white/10 ${isWindows ? 'windows-subtitles' : ''}`}>
               <video
                 ref={videoRef}
                 src={videoFile}
-                controls={showControls}
-                onPlay={handlePlay}
-                onPause={handlePause}
-                onSeeked={handleSeeked}
-                onTimeUpdate={handleTimeUpdate}
-                onContextMenu={handleContextMenu}
-                className={`w-full ${isWindows ? 'windows-subtitles' : ''}`}
+                className="w-full"
                 style={{ '--subtitle-font-size': `${fontSize}px` }}
               >
                 {subtitleFile && (

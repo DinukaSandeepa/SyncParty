@@ -31,8 +31,20 @@ video::cue {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
-.windows-subtitles::cue {
+.windows-subtitles::cue,
+.windows-subtitles .plyr__caption {
   font-family: 'Noto Serif Sinhala', serif;
+}
+
+/* Plyr caption styling */
+.plyr__captions {
+  background: transparent !important;
+}
+
+.plyr__caption {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  padding: 0.2em 0.5em;
+  border-radius: 2px;
 }
 
 @keyframes fadeInUp {
