@@ -48,7 +48,7 @@ app.get('/', (req, res) => {
 
 io.on('connection', (socket) => {
 
-  socket.on('join-room', (roomId) => {
+  socket.on('join-room', (roomId, username) => {
     socket.join(roomId);
     const roomSockets = io.sockets.adapter.rooms.get(roomId);
     const roomSize = roomSockets ? roomSockets.size : 0;
@@ -65,7 +65,7 @@ io.on('connection', (socket) => {
 
     }
     socket.emit('room-state', rooms.get(roomId));
-    socket.to(roomId).emit('user-joined', { userId: socket.id });
+    socket.to(roomId).emit('user-joined', { userId: socket.id, username });
   });
 
   socket.on('youtube-url-change', ({ roomId, youtubeUrl }) => {

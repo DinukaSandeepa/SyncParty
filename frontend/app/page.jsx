@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { io } from 'socket.io-client';
 import 'plyr/dist/plyr.css';
 
 export default function Home() {
+  const { user } = useUser();
   const [socket, setSocket] = useState(null);
   const [room, setRoom] = useState('');
   const [isInRoom, setIsInRoom] = useState(false);
@@ -58,8 +60,9 @@ export default function Home() {
         }
       }
     });
-    socket.on('user-joined', ({ userId }) => {
-      addStatus(`User ${userId.substring(0, 8)} joined the room`);
+    socket.on('user-joined', ({ userId, username }) => {
+      const displayName = username || `User ${userId.substring(0, 8)}`;
+      addStatus(`${displayName} joined the room`);
     });
     socket.on('youtube-url-change', ({ youtubeUrl }) => {
       addStatus(`YouTube URL updated`);
@@ -303,9 +306,10 @@ export default function Home() {
   }, []);
   const handleJoinRoom = () => {
     if (socket && room.trim()) {
-      socket.emit('join-room', room);
+      const username = user ? user.fullName || user.firstName || 'Guest' : 'Guest';
+      socket.emit('join-room', room, username);
       setIsInRoom(true);
-      addStatus(`Joined room: ${room}`);
+      addStatus(`Joined room: ${room} as ${username}`);
     }
   };
   const handleVideoFileChange = (e) => {
