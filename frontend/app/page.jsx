@@ -605,13 +605,14 @@ export default function Home() {
                   )}
                 </video>
               ) : (
-                <div
-                  key={youtubeVideoId}
-                  ref={videoRef}
-                  data-plyr-provider="youtube"
-                  data-plyr-embed-id={youtubeVideoId}
-                  className="w-full"
-                />
+                <div key={youtubeVideoId} className="w-full">
+                  <div
+                    ref={videoRef}
+                    data-plyr-provider="youtube"
+                    data-plyr-embed-id={youtubeVideoId}
+                    className="w-full"
+                  />
+                </div>
               )}
             </div>
           </div>
