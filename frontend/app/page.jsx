@@ -8,7 +8,10 @@ export default function Home() {
   const [socket, setSocket] = useState(null);
   const [room, setRoom] = useState('');
   const [isInRoom, setIsInRoom] = useState(false);
+  const [mode, setMode] = useState('local'); // 'local' or 'youtube'
   const [videoFile, setVideoFile] = useState(null);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [youtubeVideoId, setYoutubeVideoId] = useState(null);
   const [subtitleFile, setSubtitleFile] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -45,9 +48,25 @@ export default function Home() {
       setShowSubtitles(state.subtitleVisible);
       setSubtitleOffset(state.subtitleOffset);
       setFontSize(state.fontSize);
+      if (state.youtubeUrl) {
+        setYoutubeUrl(state.youtubeUrl);
+        const videoId = extractYoutubeVideoId(state.youtubeUrl);
+        if (videoId) {
+          setYoutubeVideoId(videoId);
+          setMode('youtube');
+        }
+      }
     });
     socket.on('user-joined', ({ userId }) => {
       addStatus(`User ${userId.substring(0, 8)} joined the room`);
+    });
+    socket.on('youtube-url-change', ({ youtubeUrl }) => {
+      addStatus(`YouTube URL updated`);
+      setYoutubeUrl(youtubeUrl);
+      const videoId = extractYoutubeVideoId(youtubeUrl);
+      if (videoId) {
+        setYoutubeVideoId(videoId);
+      }
     });
     socket.on('play-video', ({ currentTime }) => {
       addStatus(`Remote play at ${currentTime.toFixed(2)}s`);
@@ -98,6 +117,7 @@ export default function Home() {
     return () => {
       socket.off('room-state');
       socket.off('user-joined');
+      socket.off('youtube-url-change');
       socket.off('play-video');
       socket.off('pause-video');
       socket.off('seek-video');
@@ -116,22 +136,31 @@ export default function Home() {
 
   useEffect(() => {
     let isMounted = true;
-    if (videoFile && videoRef.current && !playerRef.current) {
+    const hasLocalVideo = mode === 'local' && videoFile && videoRef.current;
+    const hasYoutubeVideo = mode === 'youtube' && youtubeVideoId && videoRef.current;
+
+    if ((hasLocalVideo || hasYoutubeVideo) && !playerRef.current) {
       (async () => {
         const Plyr = (await import('plyr')).default;
         if (!isMounted) return;
 
-        playerRef.current = new Plyr(videoRef.current, {
+        const plyrOptions = {
           controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
-          captions: { active: true, update: true, language: 'en' },
           keyboard: { focused: true, global: true },
-        });
+        };
+
+        if (mode === 'youtube') {
+          plyrOptions.youtube = { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 };
+        } else {
+          plyrOptions.captions = { active: true, update: true, language: 'en' };
+        }
+
+        playerRef.current = new Plyr(videoRef.current, plyrOptions);
 
         // Apply current settings immediately
         if (playerRef.current.elements.container) {
           playerRef.current.elements.container.style.setProperty('--plyr-font-size-captions', `${fontSize}px`);
         }
-        // Don't toggle captions during init - it may not exist yet
 
         // Add event listeners to Plyr instance
         playerRef.current.on('play', () => {
@@ -149,6 +178,13 @@ export default function Home() {
         playerRef.current.on('timeupdate', () => {
           handleTimeUpdate();
         });
+
+        // YouTube-specific event
+        if (mode === 'youtube') {
+          playerRef.current.on('ready', () => {
+            addStatus('YouTube player ready');
+          });
+        }
       })();
     }
 
@@ -159,7 +195,7 @@ export default function Home() {
         playerRef.current = null;
       }
     };
-  }, [videoFile]);
+  }, [videoFile, youtubeVideoId, mode]);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -235,6 +271,38 @@ export default function Home() {
       const url = URL.createObjectURL(file);
       setVideoFile(url);
       addStatus(`Loaded video: ${file.name}`);
+    }
+  };
+
+  const extractYoutubeVideoId = (url) => {
+    if (!url) return null;
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\?]+)/,
+      /youtube\.com\/embed\/([^&\?]+)/,
+      /youtube\.com\/v\/([^&\?]+)/
+    ];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) return match[1];
+    }
+    return null;
+  };
+
+  const handleYoutubeUrlChange = (e) => {
+    const url = e.target.value;
+    setYoutubeUrl(url);
+  };
+
+  const handleLoadYoutube = () => {
+    const videoId = extractYoutubeVideoId(youtubeUrl);
+    if (videoId) {
+      setYoutubeVideoId(videoId);
+      addStatus(`Loaded YouTube video: ${videoId}`);
+      if (socket && isInRoom) {
+        socket.emit('youtube-url-change', { roomId: room, youtubeUrl });
+      }
+    } else {
+      addStatus('Invalid YouTube URL');
     }
   };
   const parseSRT = (srtContent) => {
@@ -383,53 +451,121 @@ export default function Home() {
           </div>
         </div>
         <div className="p-6 mb-6 transition-all duration-300 delay-200 border bg-white/5 rounded-xl border-white/5 animate-fade-in-up hover:border-white/20">
-          <h2 className="mb-4 text-xl font-semibold">Media Files</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className="block mb-2 text-sm font-medium">Video File</label>
-              <input
-                type="file"
-                accept="video/*,.mkv,.mp4,.webm,.avi,.mov,.wmv,.flv,.m4v"
-                onChange={handleVideoFileChange}
-                className="w-full px-4 py-2 transition-all duration-300 border rounded-lg bg-white/10 border-white/30 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-black hover:file:bg-white/80 file:cursor-pointer hover:bg-white/15"
-              />
-            </div>
-            <div>
-              <label className="block mb-2 text-sm font-medium">Subtitle File (.srt or .vtt)</label>
-              <input
-                type="file"
-                accept=".srt,.vtt"
-                onChange={handleSubtitleFileChange}
-                className="w-full px-4 py-2 transition-all duration-300 border rounded-lg bg-white/10 border-white/30 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-black file:text-white hover:file:bg-black/80 file:cursor-pointer file:border file:border-white/30 hover:bg-white/15"
-              />
-            </div>
+          <h2 className="mb-4 text-xl font-semibold">Media Source</h2>
+
+          {/* Mode Selector */}
+          <div className="flex gap-3 mb-6">
+            <button
+              onClick={() => {
+                setMode('local');
+                setYoutubeVideoId(null);
+                addStatus('Switched to Local Video mode');
+              }}
+              disabled={isInRoom}
+              className={`flex-1 px-6 py-3 font-medium rounded-lg transition-all duration-300 border ${mode === 'local'
+                  ? 'bg-white text-black border-white hover:bg-white/80'
+                  : 'bg-white/10 text-white border-white/30 hover:bg-white/15'
+                } disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95`}
+            >
+              🎬 Local Video
+            </button>
+            <button
+              onClick={() => {
+                setMode('youtube');
+                setVideoFile(null);
+                addStatus('Switched to YouTube mode');
+              }}
+              disabled={isInRoom}
+              className={`flex-1 px-6 py-3 font-medium rounded-lg transition-all duration-300 border ${mode === 'youtube'
+                  ? 'bg-white text-black border-white hover:bg-white/80'
+                  : 'bg-white/10 text-white border-white/30 hover:bg-white/15'
+                } disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95`}
+            >
+              📺 YouTube
+            </button>
           </div>
+
+          {/* Local Video Mode */}
+          {mode === 'local' && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="block mb-2 text-sm font-medium">Video File</label>
+                <input
+                  type="file"
+                  accept="video/*,.mkv,.mp4,.webm,.avi,.mov,.wmv,.flv,.m4v"
+                  onChange={handleVideoFileChange}
+                  className="w-full px-4 py-2 transition-all duration-300 border rounded-lg bg-white/10 border-white/30 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-black hover:file:bg-white/80 file:cursor-pointer hover:bg-white/15"
+                />
+              </div>
+              <div>
+                <label className="block mb-2 text-sm font-medium">Subtitle File (.srt or .vtt)</label>
+                <input
+                  type="file"
+                  accept=".srt,.vtt"
+                  onChange={handleSubtitleFileChange}
+                  className="w-full px-4 py-2 transition-all duration-300 border rounded-lg bg-white/10 border-white/30 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-black file:text-white hover:file:bg-black/80 file:cursor-pointer file:border file:border-white/30 hover:bg-white/15"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* YouTube Mode */}
+          {mode === 'youtube' && (
+            <div>
+              <label className="block mb-2 text-sm font-medium">YouTube URL</label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={youtubeUrl}
+                  onChange={handleYoutubeUrlChange}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="flex-1 px-4 py-2 transition-all duration-300 border rounded-lg bg-white/10 border-white/30 focus:outline-none focus:ring-2 focus:ring-white hover:bg-white/15"
+                />
+                <button
+                  onClick={handleLoadYoutube}
+                  className="px-6 py-2 font-medium text-black transition-all duration-300 bg-white rounded-lg hover:bg-white/80 hover:scale-105 active:scale-95"
+                >
+                  Load
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-white/60">Paste a YouTube URL (e.g., youtube.com/watch?v=... or youtu.be/...)</p>
+            </div>
+          )}
         </div>
-        {videoFile && (
+        {(videoFile || youtubeVideoId) && (
           <div className="p-6 mb-6 transition-all duration-300 delay-300 border bg-white/5 rounded-xl border-white/5 animate-fade-in-up hover:border-white/20">
             <h2 className="mb-4 text-xl font-semibold">Video Player</h2>
             <div className={`relative overflow-hidden transition-shadow duration-300 bg-black rounded-lg shadow-2xl hover:shadow-white/10 ${isWindows ? 'windows-subtitles' : ''}`}>
-              <video
-                ref={videoRef}
-                src={videoFile}
-                className="w-full"
-                style={{ '--subtitle-font-size': `${fontSize}px` }}
-              >
-                {subtitleFile && (
-                  <track
-                    ref={trackRef}
-                    kind="subtitles"
-                    src={subtitleFile}
-                    srcLang="en"
-                    label="English"
-                    default
-                  />
-                )}
-              </video>
+              {mode === 'local' ? (
+                <video
+                  ref={videoRef}
+                  src={videoFile}
+                  className="w-full"
+                  style={{ '--subtitle-font-size': `${fontSize}px` }}
+                >
+                  {subtitleFile && (
+                    <track
+                      ref={trackRef}
+                      kind="subtitles"
+                      src={subtitleFile}
+                      srcLang="en"
+                      label="English"
+                      default
+                    />
+                  )}
+                </video>
+              ) : (
+                <div
+                  ref={videoRef}
+                  data-plyr-provider="youtube"
+                  data-plyr-embed-id={youtubeVideoId}
+                  className="w-full"
+                />
+              )}
             </div>
           </div>
         )}
-        {subtitleFile && (
+        {(subtitleFile && mode === 'local') && (
           <div className="p-6 mb-6 transition-all duration-300 border bg-white/5 rounded-xl border-white/5 animate-fade-in-up delay-400 hover:border-white/20">
             <h2 className="mb-4 text-xl font-semibold">Subtitle Controls</h2>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">

@@ -9,8 +9,9 @@ A synchronized media player that allows multiple users to watch local video file
 - Automatic state synchronization for new joiners
 
 🎬 **Media Support**
-- Local video file playback (supports .mp4, .mkv, .webm, .avi, .mov, .wmv, .flv, .m4v)
-- Subtitle support (.srt and .vtt formats)
+- **Local video file playback** (supports .mp4, .mkv, .webm, .avi, .mov, .wmv, .flv, .m4v)
+- **YouTube video support** (paste any YouTube URL to watch together)
+- Subtitle support for local videos (.srt and .vtt formats)
 - Automatic SRT to WebVTT conversion
 
 🎛️ **Subtitle Controls**
@@ -100,17 +101,23 @@ npm run dev
    - Enter a room name (e.g., "party1")
    - Click "Join Room"
 
-3. **Load media files**
-   - Select a video file from your local system
-   - Optionally, select a subtitle file (.srt or .vtt)
+3. **Choose your media source**
+   - **🎬 Local Video Mode**: Select a video file from your local system
+   - **📺 YouTube Mode**: Paste a YouTube URL and click "Load"
 
-4. **Invite friends**
+4. **Load media files**
+   - For local videos: Select a video file and optionally a subtitle file (.srt or .vtt)
+   - For YouTube videos: Paste any YouTube URL (e.g., youtube.com/watch?v=... or youtu.be/...)
+
+5. **Invite friends**
    - Share the room name with friends
-   - They should join the same room and load the same video file
+   - They should join the same room
+   - For local videos, they must load the same video file
+   - For YouTube videos, the URL will be automatically synced!
 
-5. **Watch together!**
+6. **Watch together!**
    - Play/pause/seek controls are synchronized
-   - Subtitle settings are shared across all users
+   - For local videos, subtitle settings are shared across all users
    - Activity log shows all sync events
 
 ## Testing the Sync Feature
@@ -205,6 +212,7 @@ SyncParty/
 - `play-video`: Broadcast play event with timestamp
 - `pause-video`: Broadcast pause event with timestamp
 - `seek-video`: Broadcast seek event with new timestamp
+- `youtube-url-change`: Broadcast YouTube URL change
 - `subtitle-loaded`: Notify room of loaded subtitle
 - `subtitle-toggle`: Sync subtitle visibility
 - `subtitle-offset`: Sync subtitle offset
@@ -216,6 +224,7 @@ SyncParty/
 - `play-video`: Play command with timestamp
 - `pause-video`: Pause command with timestamp
 - `seek-video`: Seek command with timestamp
+- `youtube-url-change`: YouTube URL change notification
 - `subtitle-loaded`: Subtitle loaded notification
 - `subtitle-toggle`: Subtitle visibility change
 - `subtitle-offset`: Subtitle offset change

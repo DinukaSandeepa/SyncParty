@@ -59,12 +59,21 @@ io.on('connection', (socket) => {
         currentTime: 0,
         subtitleVisible: false,
         subtitleOffset: 0,
-        fontSize: 16
+        fontSize: 16,
+        youtubeUrl: null
       });
 
     }
     socket.emit('room-state', rooms.get(roomId));
     socket.to(roomId).emit('user-joined', { userId: socket.id });
+  });
+
+  socket.on('youtube-url-change', ({ roomId, youtubeUrl }) => {
+    if (rooms.has(roomId)) {
+      const roomState = rooms.get(roomId);
+      roomState.youtubeUrl = youtubeUrl;
+    }
+    socket.to(roomId).emit('youtube-url-change', { youtubeUrl });
   });
   socket.on('play-video', ({ roomId, currentTime }) => {
 
