@@ -67,6 +67,7 @@ export default function Home() {
       const videoId = extractYoutubeVideoId(youtubeUrl);
       if (videoId) {
         setYoutubeVideoId(videoId);
+        setMode('youtube');
       }
     });
     socket.on('play-video', ({ currentTime }) => {
