@@ -236,37 +236,7 @@ export default function Home() {
     };
   }, [videoFile, youtubeVideoId, mode]);
 
-  // Handle YouTube URL changes without destroying the player
-  useEffect(() => {
-    if (mode === 'youtube' && youtubeVideoId && playerRef.current) {
-      // Update the YouTube video source
-      try {
-        playerRef.current.source = {
-          type: 'video',
-          sources: [{
-            src: youtubeVideoId,
-            provider: 'youtube',
-          }],
-        };
-        addStatus(`Switched to YouTube video: ${youtubeVideoId}`);
 
-        // Re-enable audio for the new video
-        setTimeout(() => {
-          if (playerRef.current) {
-            playerRef.current.muted = false;
-            playerRef.current.volume = 1;
-          }
-        }, 500);
-      } catch (error) {
-        addStatus('Error updating YouTube video');
-        // If updating fails, destroy and reinitialize
-        if (playerRef.current) {
-          playerRef.current.destroy();
-          playerRef.current = null;
-        }
-      }
-    }
-  }, [youtubeVideoId]);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -636,6 +606,7 @@ export default function Home() {
                 </video>
               ) : (
                 <div
+                  key={youtubeVideoId}
                   ref={videoRef}
                   data-plyr-provider="youtube"
                   data-plyr-embed-id={youtubeVideoId}
