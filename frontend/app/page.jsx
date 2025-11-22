@@ -16,6 +16,7 @@ export default function Home() {
   const [fontSize, setFontSize] = useState(16);
   const [statusLog, setStatusLog] = useState([]);
   const [showControls, setShowControls] = useState(true);
+  const [isWindows, setIsWindows] = useState(false);
   const videoRef = useRef(null);
   const trackRef = useRef(null);
   const isReceivingUpdate = useRef(false);
@@ -104,6 +105,13 @@ export default function Home() {
       socket.off('font-size-change');
     };
   }, [socket]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsWindows(navigator.userAgent.indexOf('Windows') !== -1);
+    }
+  }, []);
+
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.style.setProperty('--subtitle-font-size', `${fontSize}px`);
@@ -295,7 +303,7 @@ export default function Home() {
                 onSeeked={handleSeeked}
                 onTimeUpdate={handleTimeUpdate}
                 onContextMenu={handleContextMenu}
-                className="w-full"
+                className={`w-full ${isWindows ? 'windows-subtitles' : ''}`}
                 style={{ '--subtitle-font-size': `${fontSize}px` }}
               >
                 {subtitleFile && (
