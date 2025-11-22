@@ -80,21 +80,23 @@ export default function Home() {
       addStatus(`${displayName} joined the room`);
       triggerPopup(`${displayName} joined`, 'user');
     });
-    socket.on('youtube-url-change', ({ youtubeUrl }) => {
-      addStatus(`YouTube URL updated`);
+    socket.on('youtube-url-change', ({ youtubeUrl, username }) => {
+      const user = username || 'Remote user';
+      addStatus(`${user} updated YouTube URL`);
       setYoutubeUrl(youtubeUrl);
       const videoId = extractYoutubeVideoId(youtubeUrl);
       if (videoId) {
         setYoutubeVideoId(videoId);
         setMode('youtube');
-        triggerPopup('YouTube Video Loaded', 'youtube');
+        triggerPopup(`${user} loaded video`, 'youtube');
       } else {
         setYoutubeVideoId(null);
       }
     });
-    socket.on('play-video', ({ currentTime }) => {
-      addStatus(`Remote play at ${currentTime.toFixed(2)}s`);
-      triggerPopup('Remote Play', 'play');
+    socket.on('play-video', ({ currentTime, username }) => {
+      const user = username || 'Remote user';
+      addStatus(`${user} played at ${currentTime.toFixed(2)}s`);
+      triggerPopup(`${user} played`, 'play');
       isReceivingUpdate.current = true;
       if (playerRef.current) {
         playerRef.current.currentTime = currentTime;
@@ -106,9 +108,10 @@ export default function Home() {
       setIsPlaying(true);
       setTimeout(() => { isReceivingUpdate.current = false; }, 100);
     });
-    socket.on('pause-video', ({ currentTime }) => {
-      addStatus(`Remote pause at ${currentTime.toFixed(2)}s`);
-      triggerPopup('Remote Pause', 'pause');
+    socket.on('pause-video', ({ currentTime, username }) => {
+      const user = username || 'Remote user';
+      addStatus(`${user} paused at ${currentTime.toFixed(2)}s`);
+      triggerPopup(`${user} paused`, 'pause');
       isReceivingUpdate.current = true;
       if (playerRef.current) {
         playerRef.current.currentTime = currentTime;
@@ -117,9 +120,10 @@ export default function Home() {
       setIsPlaying(false);
       setTimeout(() => { isReceivingUpdate.current = false; }, 100);
     });
-    socket.on('seek-video', ({ currentTime }) => {
-      addStatus(`Remote seek to ${currentTime.toFixed(2)}s`);
-      triggerPopup(`Seek to ${formatTime(currentTime)}`, 'seek');
+    socket.on('seek-video', ({ currentTime, username }) => {
+      const user = username || 'Remote user';
+      addStatus(`${user} seeked to ${currentTime.toFixed(2)}s`);
+      triggerPopup(`${user} seeked to ${formatTime(currentTime)}`, 'seek');
       isReceivingUpdate.current = true;
       if (playerRef.current) {
         playerRef.current.currentTime = currentTime;

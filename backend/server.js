@@ -50,6 +50,7 @@ io.on('connection', (socket) => {
 
   socket.on('join-room', (roomId, username) => {
     socket.join(roomId);
+    socket.username = username; // Store username
     const roomSockets = io.sockets.adapter.rooms.get(roomId);
     const roomSize = roomSockets ? roomSockets.size : 0;
 
@@ -73,7 +74,7 @@ io.on('connection', (socket) => {
       const roomState = rooms.get(roomId);
       roomState.youtubeUrl = youtubeUrl;
     }
-    socket.to(roomId).emit('youtube-url-change', { youtubeUrl });
+    socket.to(roomId).emit('youtube-url-change', { youtubeUrl, username: socket.username });
   });
   socket.on('play-video', ({ roomId, currentTime }) => {
 
@@ -82,7 +83,7 @@ io.on('connection', (socket) => {
       roomState.isPlaying = true;
       roomState.currentTime = currentTime;
     }
-    socket.to(roomId).emit('play-video', { currentTime });
+    socket.to(roomId).emit('play-video', { currentTime, username: socket.username });
   });
   socket.on('pause-video', ({ roomId, currentTime }) => {
 
@@ -91,7 +92,7 @@ io.on('connection', (socket) => {
       roomState.isPlaying = false;
       roomState.currentTime = currentTime;
     }
-    socket.to(roomId).emit('pause-video', { currentTime });
+    socket.to(roomId).emit('pause-video', { currentTime, username: socket.username });
   });
   socket.on('seek-video', ({ roomId, currentTime }) => {
 
@@ -99,7 +100,7 @@ io.on('connection', (socket) => {
       const roomState = rooms.get(roomId);
       roomState.currentTime = currentTime;
     }
-    socket.to(roomId).emit('seek-video', { currentTime });
+    socket.to(roomId).emit('seek-video', { currentTime, username: socket.username });
   });
   socket.on('subtitle-loaded', ({ roomId, fileName, fileSize }) => {
 
