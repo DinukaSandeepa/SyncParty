@@ -531,7 +531,7 @@ export default function Home() {
     <main className="min-h-screen p-8 text-white bg-black">
       {popup.show && playerRef.current?.elements?.container && createPortal(
         <div className="absolute top-12 left-1/2 transform -translate-x-1/2 z-[100] pointer-events-none animate-fade-in-down">
-          <div className="flex items-center gap-3 px-6 py-3 border shadow-2xl bg-black/60 backdrop-blur-xl rounded-full border-white/10">
+          <div className="flex items-center gap-3 px-6 py-3 border rounded-full shadow-2xl bg-black/60 backdrop-blur-xl border-white/10">
             {popup.icon === 'play' && (
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-green-400">
                 <path d="M8 5v14l11-7z" />
@@ -601,7 +601,7 @@ export default function Home() {
             <h2 className="text-xl font-semibold">Media Source</h2>
             <button
               onClick={handleResetMedia}
-              className="px-4 py-1 text-sm font-medium text-red-400 transition-all duration-300 border border-red-500/50 rounded-lg hover:bg-red-500/10 hover:border-red-500 hover:text-red-300"
+              className="px-4 py-1 text-sm font-medium text-red-400 transition-all duration-300 border rounded-lg border-red-500/50 hover:bg-red-500/10 hover:border-red-500 hover:text-red-300"
             >
               Reset
             </button>

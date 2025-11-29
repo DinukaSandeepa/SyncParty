@@ -437,6 +437,58 @@ const nextConfig = {
 | YouTube not loading | Ensure valid YouTube URL format |
 | Subtitles not showing | Check file format (SRT/VTT) and try toggling visibility |
 | Connection timeout | Render free tier may sleep; wait 30-60 seconds for cold start |
+| **Video plays but no audio** | See [Audio Codec Compatibility](#audio-codec-compatibility) section below |
+
+### Audio Codec Compatibility
+
+If your video plays but has **no sound**, the issue is likely an unsupported audio codec. Web browsers only support certain audio formats natively.
+
+#### Supported Audio Codecs
+| Codec | Browser Support |
+|-------|-----------------|
+| AAC | ✅ All browsers |
+| MP3 | ✅ All browsers |
+| Opus | ✅ All browsers |
+| Vorbis | ✅ All browsers |
+| FLAC | ⚠️ Most browsers |
+
+#### Unsupported Audio Codecs
+| Codec | Notes |
+|-------|-------|
+| **E-AC-3 (Dolby Digital Plus)** | ❌ Not supported - common in high-quality rips |
+| **Dolby Atmos** | ❌ Not supported |
+| **DTS / DTS-HD** | ❌ Not supported |
+| **TrueHD** | ❌ Not supported |
+| **AC-3 (Dolby Digital)** | ⚠️ Limited support |
+
+#### Solution: Convert Audio with FFmpeg
+
+If your video has an unsupported audio codec (like E-AC-3/Dolby Atmos), convert it to AAC:
+
+```bash
+# Basic conversion (keeps original video, converts audio to AAC)
+ffmpeg -i "input.mkv" -c:v copy -c:a aac -b:a 384k "output.mkv"
+
+# Convert 5.1/7.1 surround to stereo (better compatibility)
+ffmpeg -i "input.mkv" -c:v copy -c:a aac -ac 2 -b:a 256k "output.mkv"
+
+# Output as MP4 (maximum browser compatibility)
+ffmpeg -i "input.mkv" -c:v copy -c:a aac -b:a 320k "output.mp4"
+```
+
+#### Check Your File's Audio Codec
+
+Use FFmpeg or MediaInfo to check your file's audio codec:
+
+```bash
+# Using FFmpeg
+ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "video.mkv"
+
+# Using MediaInfo (if installed)
+mediainfo --Inform="Audio;%Format%" "video.mkv"
+```
+
+> **Note**: This is a browser limitation, not a SyncParty bug. The HTML5 `<video>` element cannot decode proprietary audio codecs like Dolby Digital Plus without special licensing.
 
 ### Debug Checklist
 
