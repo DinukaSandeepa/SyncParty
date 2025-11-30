@@ -3,7 +3,7 @@
 export default function UserPanel({ users, isInRoom, roomName }) {
     if (!isInRoom) return null;
     return (
-        <div className="fixed right-0 top-0 h-full w-64 bg-[#2b2d31] border-l border-[#1e1f22] flex flex-col z-50 animate-slide-in-right">
+        <div className="fixed right-0 top-16 h-[calc(100vh-4rem)] w-64 bg-[#2b2d31] border-l border-[#1e1f22] flex flex-col z-40 animate-slide-in-right">
             <div className="p-3 border-b border-[#1e1f22] bg-[#232428]">
                 <div className="flex items-center gap-2">
                     <svg

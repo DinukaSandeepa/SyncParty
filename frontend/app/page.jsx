@@ -6,7 +6,6 @@ import { io } from 'socket.io-client';
 import 'plyr/dist/plyr.css';
 
 import {
-  Logo,
   RoomSection,
   MediaSourceSection,
   VideoPlayer,
@@ -425,14 +424,13 @@ export default function Home() {
     }
   };
   return (
-    <main className={`min-h-screen p-8 text-white bg-black transition-all duration-300 ${isInRoom ? 'pr-72' : ''}`}>
+    <main className={`min-h-screen p-6 text-white bg-black transition-all duration-300 ${isInRoom ? 'pr-72' : ''}`}>
       <SyncPopup
         popup={popup}
         playerContainer={playerRef.current?.elements?.container}
       />
       <UserPanel users={roomUsers} isInRoom={isInRoom} roomName={room} />
       <div className="max-w-6xl mx-auto">
-        <Logo />
         <RoomSection
           room={room}
           setRoom={setRoom}
