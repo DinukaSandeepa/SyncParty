@@ -12,7 +12,8 @@ import {
   VideoPlayer,
   SubtitleControls,
   ActivityLog,
-  SyncPopup
+  SyncPopup,
+  UserPanel
 } from './components';
 
 import { useKeyboardControls } from './hooks/useKeyboardControls';
@@ -36,6 +37,7 @@ export default function Home() {
   const [statusLog, setStatusLog] = useState([]);
   const [isWindows, setIsWindows] = useState(false);
   const [popup, setPopup] = useState({ show: false, message: '', icon: null });
+  const [roomUsers, setRoomUsers] = useState([]);
   const videoRef = useRef(null);
   const playerRef = useRef(null);
   const trackRef = useRef(null);
@@ -152,9 +154,24 @@ export default function Home() {
       addStatus(`Remote font size: ${fontSize}px`);
       setFontSize(fontSize);
     });
+    socket.on('room-users', (users) => {
+      // Mark current user and update the list
+      const updatedUsers = users.map(u => ({
+        ...u,
+        isCurrentUser: u.oderId === user?.id
+      }));
+      setRoomUsers(updatedUsers);
+    });
+    socket.on('user-left', ({ oderId, username }) => {
+      const displayName = username || `User ${oderId?.substring(0, 8) || 'Unknown'}`;
+      addStatus(`${displayName} left the room`);
+      triggerPopup(`${displayName} left`, 'user');
+    });
     return () => {
       socket.off('room-state');
       socket.off('user-joined');
+      socket.off('user-left');
+      socket.off('room-users');
       socket.off('youtube-url-change');
       socket.off('play-video');
       socket.off('pause-video');
@@ -164,7 +181,7 @@ export default function Home() {
       socket.off('subtitle-offset');
       socket.off('font-size-change');
     };
-  }, [socket, addStatus, triggerPopup]);
+  }, [socket, addStatus, triggerPopup, user]);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsWindows(navigator.userAgent.indexOf('Windows') !== -1);
@@ -263,7 +280,11 @@ export default function Home() {
   const handleJoinRoom = () => {
     if (socket && room.trim()) {
       const username = user ? user.fullName || user.firstName || 'Guest' : 'Guest';
-      socket.emit('join-room', room, username);
+      const userInfo = {
+        oderId: user?.id || null,
+        imageUrl: user?.imageUrl || null
+      };
+      socket.emit('join-room', room, username, userInfo);
       setIsInRoom(true);
       addStatus(`Joined room: ${room} as ${username}`);
     }
@@ -387,6 +408,15 @@ export default function Home() {
       socket.emit('youtube-url-change', { roomId: room, youtubeUrl: '' });
     }
   };
+  const handleLeaveRoom = () => {
+    if (socket) {
+      socket.emit('leave-room', room);
+      setIsInRoom(false);
+      setRoomUsers([]);
+      setRoom('');
+      addStatus('Left the room');
+    }
+  };
   const handleModeChange = (newMode) => {
     setMode(newMode);
     if (newMode === 'local') {
@@ -396,11 +426,12 @@ export default function Home() {
     }
   };
   return (
-    <main className="min-h-screen p-8 text-white bg-black">
+    <main className={`min-h-screen p-8 text-white bg-black transition-all duration-300 ${isInRoom ? 'pr-72' : ''}`}>
       <SyncPopup
         popup={popup}
         playerContainer={playerRef.current?.elements?.container}
       />
+      <UserPanel users={roomUsers} isInRoom={isInRoom} roomName={room} />
       <div className="max-w-6xl mx-auto">
         <Logo />
         <RoomSection
@@ -408,6 +439,7 @@ export default function Home() {
           setRoom={setRoom}
           isInRoom={isInRoom}
           onJoinRoom={handleJoinRoom}
+          onLeaveRoom={handleLeaveRoom}
         />
         <MediaSourceSection
           mode={mode}

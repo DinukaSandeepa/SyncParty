@@ -29,6 +29,7 @@ const io = new Server(server, {
 });
 
 const rooms = new Map();
+const roomUsers = new Map(); // Track users in each room
 
 app.get('/health', (req, res) => {
   res.json({
@@ -48,9 +49,12 @@ app.get('/', (req, res) => {
 
 io.on('connection', (socket) => {
 
-  socket.on('join-room', (roomId, username) => {
+  socket.on('join-room', (roomId, username, userInfo = {}) => {
     socket.join(roomId);
-    socket.username = username; // Store username
+    socket.username = username;
+    socket.userInfo = userInfo;
+    socket.currentRoom = roomId;
+
     const roomSockets = io.sockets.adapter.rooms.get(roomId);
     const roomSize = roomSockets ? roomSockets.size : 0;
 
@@ -63,10 +67,33 @@ io.on('connection', (socket) => {
         fontSize: 16,
         youtubeUrl: null
       });
-
     }
+
+    // Initialize room users if not exists
+    if (!roomUsers.has(roomId)) {
+      roomUsers.set(roomId, new Map());
+    }
+
+    // Add user to room users
+    const userData = {
+      visibleId: socket.id,
+      oderId: userInfo.oderId || socket.id,
+      username: username || `User ${socket.id.substring(0, 8)}`,
+      imageUrl: userInfo.imageUrl || null,
+      joinedAt: Date.now()
+    };
+    roomUsers.get(roomId).set(socket.id, userData);
+
+    // Send room state to the joining user
     socket.emit('room-state', rooms.get(roomId));
-    socket.to(roomId).emit('user-joined', { userId: socket.id, username });
+
+    // Send current user list to the joining user
+    const userList = Array.from(roomUsers.get(roomId).values());
+    socket.emit('room-users', userList);
+
+    // Notify others about the new user and send updated user list
+    socket.to(roomId).emit('user-joined', { oderId: socket.id, oderId: userInfo.oderId, username, imageUrl: userInfo.imageUrl });
+    socket.to(roomId).emit('room-users', userList);
   });
 
   socket.on('youtube-url-change', ({ roomId, youtubeUrl }) => {
@@ -76,6 +103,30 @@ io.on('connection', (socket) => {
     }
     socket.to(roomId).emit('youtube-url-change', { youtubeUrl, username: socket.username });
   });
+
+  socket.on('leave-room', (roomId) => {
+    socket.leave(roomId);
+
+    if (roomUsers.has(roomId)) {
+      const userData = roomUsers.get(roomId).get(socket.id);
+      roomUsers.get(roomId).delete(socket.id);
+
+      // Notify others
+      socket.to(roomId).emit('user-left', { oderId: socket.id, oderId: userData?.oderId, username: socket.username });
+
+      // Send updated user list
+      if (roomUsers.get(roomId).size === 0) {
+        roomUsers.delete(roomId);
+        rooms.delete(roomId);
+      } else {
+        const userList = Array.from(roomUsers.get(roomId).values());
+        socket.to(roomId).emit('room-users', userList);
+      }
+    }
+
+    socket.currentRoom = null;
+  });
+
   socket.on('play-video', ({ roomId, currentTime }) => {
 
     if (rooms.has(roomId)) {
@@ -135,7 +186,23 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('font-size-change', { fontSize });
   });
   socket.on('disconnect', () => {
+    // Remove user from room and notify others
+    if (socket.currentRoom && roomUsers.has(socket.currentRoom)) {
+      const roomId = socket.currentRoom;
+      const userData = roomUsers.get(roomId).get(socket.id);
+      roomUsers.get(roomId).delete(socket.id);
 
+      // Clean up empty rooms
+      if (roomUsers.get(roomId).size === 0) {
+        roomUsers.delete(roomId);
+        rooms.delete(roomId);
+      } else {
+        // Notify remaining users
+        const userList = Array.from(roomUsers.get(roomId).values());
+        socket.to(roomId).emit('user-left', { oderId: socket.id, oderId: userData?.oderId, username: socket.username });
+        socket.to(roomId).emit('room-users', userList);
+      }
+    }
   });
 });
 
