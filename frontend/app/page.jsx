@@ -424,7 +424,7 @@ export default function Home() {
     }
   };
   return (
-    <main className={`min-h-screen p-6 text-white bg-black transition-all duration-300 ${isInRoom ? 'pr-72' : ''}`}>
+    <main className="min-h-screen p-6 text-white transition-all bg-black">
       <SyncPopup
         popup={popup}
         playerContainer={playerRef.current?.elements?.container}
