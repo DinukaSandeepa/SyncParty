@@ -155,7 +155,6 @@ export default function Home() {
       setFontSize(fontSize);
     });
     socket.on('room-users', (users) => {
-      // Mark current user and update the list
       const updatedUsers = users.map(u => ({
         ...u,
         isCurrentUser: u.oderId === user?.id
