@@ -1,6 +1,7 @@
-import { ClerkProvider, SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
+import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
 import { Raleway } from 'next/font/google'
+import { Header } from './components'
 
 const raleway = Raleway({
   subsets: ['latin'],
@@ -23,16 +24,10 @@ export default function RootLayout({ children }) {
           <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Sinhala:wght@100..900&display=swap" rel="stylesheet" />
         </head>
         <body className={raleway.className}>
-          <header>
-            <SignedOut>
-              <SignInButton />
-              <SignUpButton />
-            </SignedOut>
-            <SignedIn>
-              <UserButton />
-            </SignedIn>
-          </header>
-          {children}
+          <Header />
+          <div className="pt-16">
+            {children}
+          </div>
         </body>
       </html>
     </ClerkProvider>
