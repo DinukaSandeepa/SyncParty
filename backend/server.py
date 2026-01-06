@@ -15,27 +15,30 @@ load_dotenv()
 
 app = FastAPI(title="SyncParty Socket.IO Server", version="1.0.0")
 
-sio = socketio.AsyncServer(
-    async_mode='asgi',
-    cors_allowed_origins=[],
-    logger=True,
-    engineio_logger=False
-)
-
-socket_app = socketio.ASGIApp(
-    socketio_server=sio,
-    other_asgi_app=app
-)
-
+# CORS for both FastAPI routes and Socket.IO (engine.io)
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 allowed_origins = [
     'http://localhost:3000',
     'https://www.syncparty.net',
-    FRONTEND_URL
+    'https://syncparty.net',
+    FRONTEND_URL,
 ]
 allowed_origins = list(set([origin for origin in allowed_origins if origin]))
 
-sio.cors_allowed_origins = allowed_origins
+# IMPORTANT: Socket.IO CORS must be configured at construction time.
+# Setting `sio.cors_allowed_origins` after initialization does not reliably
+# update engine.io's CORS behavior for the /socket.io polling endpoints.
+sio = socketio.AsyncServer(
+    async_mode='asgi',
+    cors_allowed_origins=allowed_origins,
+    logger=True,
+    engineio_logger=False,
+)
+
+socket_app = socketio.ASGIApp(
+    socketio_server=sio,
+    other_asgi_app=app,
+)
 
 
 def verify_origin(origin: str) -> bool:
