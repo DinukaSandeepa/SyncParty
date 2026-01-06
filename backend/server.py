@@ -38,6 +38,7 @@ allowed_origins = [
     'http://localhost:3000',
     'https://sync-party.vercel.app',
     'https://sync.dinukasandeepa.com',
+    'https://www.syncparty.net',
     FRONTEND_URL
 ]
 # Filter out None values
