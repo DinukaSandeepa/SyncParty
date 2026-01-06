@@ -7,7 +7,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8-010101?style=for-the-badge&logo=socket.io)](https://socket.io/)
-[![Express](https://img.shields.io/badge/Express-5-000000?style=for-the-badge&logo=express)](https://expressjs.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
@@ -101,7 +101,7 @@ SyncParty is a modern web application that enables multiple users to watch video
 ### Frontend
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| [Next.js](https://nextjs.org/) | 16.0.3 | React framework with App Router |
+| [Next.js](https://nextjs.org/) | 16.0.10 | React framework with App Router |
 | [React](https://react.dev/) | 19.2.0 | UI component library |
 | [Socket.IO Client](https://socket.io/) | 4.8.1 | Real-time bidirectional communication |
 | [Plyr](https://plyr.io/) | 3.8.3 | Media player with YouTube support |
@@ -112,15 +112,16 @@ SyncParty is a modern web application that enables multiple users to watch video
 ### Backend
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| [Node.js](https://nodejs.org/) | 18+ | JavaScript runtime |
-| [Express](https://expressjs.com/) | 5.1.0 | Web application framework |
-| [Socket.IO](https://socket.io/) | 4.8.1 | WebSocket server |
-| [CORS](https://github.com/expressjs/cors) | 2.8.5 | Cross-origin resource sharing |
+| [Python](https://www.python.org/) | 3.11 | Runtime |
+| [FastAPI](https://fastapi.tiangolo.com/) | 0.115.0 | ASGI web framework |
+| [python-socketio](https://python-socketio.readthedocs.io/) | 5.11.4 | Socket.IO server |
+| [Uvicorn](https://www.uvicorn.org/) | 0.32.0 | ASGI server |
+| [python-dotenv](https://github.com/theskumar/python-dotenv) | 1.0.1 | Environment variable management |
 
 ### Development Tools
 | Tool | Purpose |
 |------|---------|
-| [Nodemon](https://nodemon.io/) | Hot-reload for backend development |
+| [Uvicorn reload](https://www.uvicorn.org/) | Hot-reload for backend development |
 | [PostCSS](https://postcss.org/) | CSS processing |
 | [Autoprefixer](https://github.com/postcss/autoprefixer) | CSS vendor prefixing |
 
@@ -141,7 +142,7 @@ SyncParty is a modern web application that enables multiple users to watch video
           │                │                │
           ▼                ▼                ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Socket.IO Server (Express)                    │
+│               Socket.IO Server (FastAPI + python-socketio)       │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │                      Room Manager                          │  │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │  │
@@ -168,8 +169,9 @@ SyncParty is a modern web application that enables multiple users to watch video
 
 ### Prerequisites
 
-- **Node.js** 18.0.0 or higher
-- **npm**, **yarn**, **pnpm**, or **bun** package manager
+- **Node.js** 18.0.0 or higher (frontend)
+- **npm** (or equivalent package manager) (frontend)
+- **Python** 3.11+ and **pip** (backend)
 - **Git** for cloning the repository
 
 ### Installation
@@ -180,28 +182,34 @@ SyncParty is a modern web application that enables multiple users to watch video
    cd SyncParty
    ```
 
-2. **Install all dependencies** (recommended)
+2. **Install dependencies**
+
+   **Frontend:**
    ```bash
-   npm run install:all
+   cd frontend
+   npm install
    ```
 
-   Or install separately:
+   **Backend:**
    ```bash
-   # Backend
-   cd backend && npm install
-   
-   # Frontend
-   cd ../frontend && npm install
+   cd ../backend
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
    ```
 
 3. **Configure environment variables**
 
-   Create `frontend/.env.local`:
+   Create `frontend/.env.local` (you can start from `frontend/.env.example`):
    ```env
    NEXT_PUBLIC_SOCKET_URL=http://localhost:3001
    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
    CLERK_SECRET_KEY=your_clerk_secret_key
    ```
+
+   Notes:
+   - `NEXT_PUBLIC_SOCKET_URL` must point to the backend Socket.IO server.
+   - Clerk keys are required because the app wraps the UI in `ClerkProvider`.
 
    Create `backend/.env`:
    ```env
@@ -214,7 +222,8 @@ SyncParty is a modern web application that enables multiple users to watch video
    **Terminal 1 - Backend:**
    ```bash
    cd backend
-   npm run dev
+   source .venv/bin/activate
+   uvicorn server:socket_app --reload --host 0.0.0.0 --port 3001
    ```
    Server runs on `http://localhost:3001`
 
@@ -224,14 +233,6 @@ SyncParty is a modern web application that enables multiple users to watch video
    npm run dev
    ```
    App runs on `http://localhost:3000`
-
-### Quick Start with Root Scripts
-
-```bash
-# From the root directory
-npm run dev:backend   # Start backend with nodemon
-npm run dev:frontend  # Start frontend dev server
-```
 
 ---
 
@@ -293,7 +294,8 @@ npm run dev:frontend  # Start frontend dev server
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `join-room` | `roomId: string, username: string` | Join a specific room |
+| `join-room` | `(roomId, username?, userInfo?)` | Join a specific room |
+| `leave-room` | `(roomId)` | Leave a room |
 | `play-video` | `{ roomId, currentTime }` | Broadcast play action |
 | `pause-video` | `{ roomId, currentTime }` | Broadcast pause action |
 | `seek-video` | `{ roomId, currentTime }` | Broadcast seek action |
@@ -308,11 +310,14 @@ npm run dev:frontend  # Start frontend dev server
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `room-state` | `RoomState` | Current room state on join |
-| `user-joined` | `{ userId, username }` | User joined notification |
+| `room-users` | `User[]` | Updated user list for the room |
+| `user-joined` | `{ oderId, username, imageUrl? }` | User joined notification |
+| `user-left` | `{ oderId, username }` | User left notification |
 | `play-video` | `{ currentTime, username }` | Play command |
 | `pause-video` | `{ currentTime, username }` | Pause command |
 | `seek-video` | `{ currentTime, username }` | Seek command |
 | `youtube-url-change` | `{ youtubeUrl, username }` | YouTube URL update |
+| `subtitle-loaded` | `{ userId, fileName, fileSize }` | Subtitle loaded notification |
 | `subtitle-toggle` | `{ visible }` | Subtitle visibility change |
 | `subtitle-offset` | `{ offset }` | Subtitle offset change |
 | `font-size-change` | `{ fontSize }` | Font size change |
@@ -338,8 +343,6 @@ npm run dev:frontend  # Start frontend dev server
 
 ## 🌐 Deployment
 
-> **📘 For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md)**
-
 ### Quick Deploy
 
 #### Frontend → Vercel
@@ -358,8 +361,8 @@ npm run dev:frontend  # Start frontend dev server
 
 1. Create Web Service on [Render](https://render.com)
 2. Set root directory: `backend`
-3. Build command: `npm install`
-4. Start command: `npm start`
+3. Build command: `pip install -r requirements.txt`
+4. Start command: `uvicorn server:socket_app --host 0.0.0.0 --port $PORT`
 5. Add environment variable:
    ```
    FRONTEND_URL=https://your-app.vercel.app
@@ -380,8 +383,11 @@ npm run dev:frontend  # Start frontend dev server
 ```
 SyncParty/
 ├── backend/
-│   ├── server.js              # Socket.IO server & Express app
-│   └── package.json           # Backend dependencies
+│   ├── server.py              # FastAPI + Socket.IO (ASGI) server
+│   ├── requirements.txt       # Python dependencies
+│   ├── runtime.txt            # Python runtime (for some platforms)
+│   ├── Procfile               # Process declaration (e.g. Render/Heroku style)
+│   └── README.md              # Backend-specific docs
 │
 ├── frontend/
 │   ├── app/
@@ -394,9 +400,8 @@ SyncParty/
 │   ├── proxy.js               # Development proxy (optional)
 │   └── package.json           # Frontend dependencies
 │
-├── package.json               # Root scripts
 ├── README.md                  # This file
-└── DEPLOYMENT.md              # Deployment guide
+└── .gitignore
 ```
 
 ---
@@ -418,7 +423,7 @@ const nextConfig = {
 
 ### Backend Configuration
 
-**CORS Origins** (configured in `server.js`):
+**CORS Origins** (configured in `backend/server.py`):
 - `http://localhost:3000` (development)
 - `https://sync-party.vercel.app` (production)
 - `https://sync.dinukasandeepa.com` (custom domain)
