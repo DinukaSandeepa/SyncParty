@@ -21,7 +21,7 @@ app = FastAPI(title="SyncParty Socket.IO Server", version="1.0.0")
 # Initialize Socket.IO server with async mode
 sio = socketio.AsyncServer(
     async_mode='asgi',
-    cors_allowed_origins='*',  # We'll handle CORS validation in middleware
+    cors_allowed_origins=[],  # Will be set after allowed_origins is defined
     logger=True,
     engineio_logger=False
 )
@@ -41,8 +41,11 @@ allowed_origins = [
     'https://www.syncparty.net',
     FRONTEND_URL
 ]
-# Filter out None values
-allowed_origins = [origin for origin in allowed_origins if origin]
+# Filter out None values and duplicates
+allowed_origins = list(set([origin for origin in allowed_origins if origin]))
+
+# Update Socket.IO CORS with the allowed origins
+sio.cors_allowed_origins = allowed_origins
 
 # Custom CORS origin validator
 def verify_origin(origin: str) -> bool:
@@ -58,9 +61,9 @@ def verify_origin(origin: str) -> bool:
 # Configure CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins + ['*.vercel.app'],
+    allow_origins=allowed_origins,  # Remove the wildcard, use explicit list
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "OPTIONS"],  # Added OPTIONS for preflight
     allow_headers=["*"],
 )
 
