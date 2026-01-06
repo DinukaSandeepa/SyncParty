@@ -1,17 +1,6 @@
-# FastAPI - Modern, fast web framework for building APIs
 fastapi==0.115.0
-
-# Uvicorn - ASGI server for running FastAPI
 uvicorn[standard]==0.32.0
-
-# Python Socket.IO - Socket.IO server compatible with Socket.IO clients
 python-socketio==5.11.4
-
-# Python Engine.IO - Transport layer for Socket.IO
 python-engineio==4.9.1
-
-# Python dotenv - Load environment variables from .env file
 python-dotenv==1.0.1
-
-# CORS middleware for FastAPI
 fastapi-cors==0.0.6
